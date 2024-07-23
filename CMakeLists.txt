@@ -14,3 +14,11 @@ AddModulesInDirectory(
 		"Core"
 		"BoostImplementations"
 )
+
+AddCXXModule(
+	NAME "ByteCommunication"
+	NAMESPACE "Cango"
+	LINKS
+		"Cango_ByteCommunication_Core"
+		"Cango_ByteCommunication_BoostImplementations"
+)
