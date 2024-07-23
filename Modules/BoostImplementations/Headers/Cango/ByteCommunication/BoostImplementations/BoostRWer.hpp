@@ -44,7 +44,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 				result
 			);
 			if (Logger != nullptr && result.failed())
-				Logger->error("{}> 写入字节失败({}/{}): {}", bytes, buffer.size(), result.what());
+				Logger->error("写入字节失败({}/{}): {}", bytes, buffer.size(), result.what());
 
 			return bytes;
 		}

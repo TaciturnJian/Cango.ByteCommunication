@@ -175,6 +175,80 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		}
 	};
 
+	class BoostTCPSocketRWerProvider {
+		bool IsListening{false};
+		boost::asio::io_context IOContext{};
+		boost::asio::ip::tcp::acceptor Acceptor{IOContext};
+		boost::asio::ip::tcp::endpoint LocalEndpoint{};
+
+		Credential<boost::asio::io_context> ClientIOContext{};
+		ObjectUser<spdlog::logger> Logger{};
+		ObjectUser<spdlog::logger> ClientLogger{};
+
+		struct Configurations {
+			struct ActorsType {
+				Credential<boost::asio::io_context>& ClientIOContext;
+				ObjectUser<spdlog::logger>& Logger;
+				ObjectUser<spdlog::logger>& ClientLogger;
+			} Actors;
+
+			struct OptionsType {
+				boost::asio::ip::tcp::endpoint& LocalEndpoint;
+			} Options;
+		};
+
+		[[nodiscard]] bool RefreshAcceptor() noexcept {
+			if (IsListening) return true;
+			if (boost::system::error_code result{}; Acceptor.open(LocalEndpoint.protocol(), result).failed()) {
+				if (Logger != nullptr) Logger->error("无法打开侦听器: {}", result.what());
+				return false;
+			}
+			if (boost::system::error_code result{};
+				Acceptor.bind(LocalEndpoint, result).failed()) {
+				if (Logger != nullptr)
+					Logger->error(
+						"无法绑定到地址({}:{}): {}",
+						LocalEndpoint.address().to_string(),
+						LocalEndpoint.port(),
+						result.what());
+				return false;
+			}
+			if (boost::system::error_code result{};
+				Acceptor.listen(boost::asio::socket_base::max_listen_connections, result).failed()) {
+				if (Logger != nullptr) Logger->error("无法开始侦听: {}", result.what());
+				return false;
+			}
+			IsListening = true;
+			return true;
+		}
+
+	public:
+		using ItemType = ObjectOwner<TCPSocketRWer>;
+
+		[[nodiscard]] Configurations Configure() noexcept {
+			return {
+				.Actors = {ClientIOContext, Logger, ClientLogger},
+				.Options = {LocalEndpoint}
+			};
+		}
+
+		[[nodiscard]] bool IsFunctional() const noexcept { return ValidateAll(ClientIOContext); }
+
+		[[nodiscard]] bool GetItem(ObjectOwner<TCPSocketRWer>& socket) {
+			if (!RefreshAcceptor()) return false;
+
+			auto [io_context_user, io_context] = Acquire(ClientIOContext);
+			auto new_socket = std::make_shared<boost::asio::ip::tcp::socket>(io_context);
+
+			if (boost::system::error_code result; Acceptor.accept(*new_socket, result).failed()) {
+				if (Logger != nullptr) Logger->error("无法接受连接: {}", result.what());
+				return false;
+			}
+			socket = std::make_shared<TCPSocketRWer>(std::move(new_socket), ClientLogger);
+			return true;
+		}
+	};
+
 	template <typename TProvider, typename TRWer = typename TProvider::ItemType::element_type>
 	concept IsUDPSocketRWerProvider = IsRWerProvider<TProvider> && std::same_as<UDPSocketRWer, TRWer>;
 
