@@ -5,6 +5,24 @@
 #include "BoostRWer.hpp"
 
 namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
+	template <IsRWerProvider TProvider, std::default_initializable TReaderMessage, std::default_initializable
+		TWriterMessage>
+	struct EasyRWerCommunicationTaskCheatsheet {
+		EasyCommunicationTask<TProvider, TReaderMessage, TWriterMessage> Task{};
+		EasyCommunicationTaskPoolsAndMonitors<TReaderMessage, TWriterMessage> Utils{};
+		ObjectOwner<boost::asio::io_context> IOContext{std::make_shared<boost::asio::io_context>()};
+		ObjectOwner<TProvider> Provider{std::make_shared<TProvider>()};
+
+		EasyRWerCommunicationTaskCheatsheet() {
+			auto&& provider_config = Provider->Configure();
+			provider_config.Actors.IOContext = IOContext;
+
+			Utils.Apply(Task);
+			auto&& task_config = Task.Configure();
+			task_config.Actors.Provider = Provider;
+		}
+	};
+
 	template <typename TProvider, typename TRWer = typename TProvider::ItemType::element_type>
 	concept IsSerialPortRWerProvider = IsRWerProvider<TProvider> && std::same_as<SerialPortRWer, TRWer>;
 
@@ -94,6 +112,10 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		}
 	};
 
+	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>
+	using EasyCangoSerialPortRWerCommunicationTaskCheatsheet = EasyRWerCommunicationTaskCheatsheet<
+		CangoSerialPortRWerProvider, TReaderMessage, TWriterMessage>;
+
 	template <typename TProvider, typename TRWer = typename TProvider::ItemType::element_type>
 	concept IsTCPSocketRWerProvider = IsRWerProvider<TProvider> && std::same_as<TCPSocketRWer, TRWer>;
 
@@ -175,6 +197,10 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		}
 	};
 
+	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>
+	using EasyCangoTCPSocketRWerCommunicationTaskCheatsheet = EasyRWerCommunicationTaskCheatsheet<
+		CangoTCPSocketRWerProvider, TReaderMessage, TWriterMessage>;
+
 	class BoostTCPSocketRWerProvider {
 		bool IsListening{false};
 		boost::asio::io_context IOContext{};
@@ -246,6 +272,23 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 			}
 			socket = std::make_shared<TCPSocketRWer>(std::move(new_socket), ClientLogger);
 			return true;
+		}
+	};
+
+	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>
+	struct EasyBoostTCPSocketRWerCommunicationTaskCheatsheet {
+		EasyCommunicationTask<BoostTCPSocketRWerProvider, TReaderMessage, TWriterMessage> Task{};
+		EasyCommunicationTaskPoolsAndMonitors<TReaderMessage, TWriterMessage> Utils{};
+		ObjectOwner<boost::asio::io_context> ClientIOContext{std::make_shared<boost::asio::io_context>()};
+		ObjectOwner<BoostTCPSocketRWerProvider> Provider{std::make_shared<BoostTCPSocketRWerProvider>()};
+
+		EasyBoostTCPSocketRWerCommunicationTaskCheatsheet() {
+			auto&& provider_config = Provider->Configure();
+			provider_config.Actors.ClientIOContext = ClientIOContext;
+
+			Utils.Apply(Task);
+			auto&& task_config = Task.Configure();
+			task_config.Actors.Provider = Provider;
 		}
 	};
 
@@ -327,4 +370,8 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 			return true;
 		}
 	};
+
+	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>
+	using EasyCangoUDPSocketRWerCommunicationTaskCheatsheet = EasyRWerCommunicationTaskCheatsheet<
+		CangoUDPSocketRWerProvider, TReaderMessage, TWriterMessage>;
 }
