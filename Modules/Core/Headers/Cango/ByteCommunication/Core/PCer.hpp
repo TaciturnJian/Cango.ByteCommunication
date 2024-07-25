@@ -285,7 +285,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		IsItemDestination TReaderMessageDestination,
 		IsItemSource TWriterMessageSource,
 		IsDeliveryTaskMonitor TReaderMonitor,
-		IsDeliveryTaskMonitor TWritingMonitor>
+		IsDeliveryTaskMonitor TWriterMonitor>
 	class CommunicationTask {
 		using RWerConsumerType = DeliveryTaskAsRWerConsumer<
 			typename TProvider::ItemType::element_type,
@@ -293,7 +293,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 			TReaderMessageDestination,
 			TWriterMessageSource,
 			TReaderMonitor,
-			TWritingMonitor>;
+			TWriterMonitor>;
 		using ProviderTaskType = DeliveryTask<TProvider, RWerConsumerType, TProviderMonitor>;
 
 		ProviderTaskType ProviderTask{};
@@ -306,7 +306,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 				Credential<TWriterMessageSource>& WriterMessageSource;
 				Credential<TProviderMonitor>& ProviderMonitor;
 				Credential<TReaderMonitor>& ReaderMonitor;
-				Credential<TWritingMonitor>& WriterMonitor;
+				Credential<TWriterMonitor>& WriterMonitor;
 			} Actors;
 
 			struct OptionsType {
@@ -319,6 +319,14 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		};
 
 	public:
+		using ProviderType = TProvider;
+		using ProviderTaskMonitorType = TProviderMonitor;
+		using ReaderMessageVerifierType = TReaderMessageVerifier;
+		using ReaderMessageDestinationType = TReaderMessageDestination;
+		using WriterMessageSourceType = TWriterMessageSource;
+		using ReaderTaskMonitorType = TReaderMonitor;
+		using WriterTaskMonitorType = TWriterMonitor;
+
 		CommunicationTask() noexcept {
 			auto&& provider = ProviderTask.Configure();
 			provider.Actors.ItemDestination = RWerConsumer;

@@ -1,6 +1,8 @@
 #include <Cango/ByteCommunication/BoostImplementations.hpp>
+#include <spdlog/spdlog.h>
 
 using namespace Cango;
+using namespace std::chrono_literals;
 
 namespace {
 	const boost::asio::ip::tcp::endpoint LocalEndpoint{
@@ -20,30 +22,28 @@ namespace {
 }
 
 int main() {
-	const auto socket_io_context_owner = std::make_shared<boost::asio::io_context>();
 	const auto default_logger_user = spdlog::default_logger();
-	const auto provider = std::make_shared<BoostTCPSocketRWerProvider>();
+	EasyBoostTCPSocketRWerCommunicationTaskCheatsheet<MessageType, MessageType> cheatsheet{};
 	{
-		auto&& config = provider->Configure();
-		config.Actors.ClientIOContext = socket_io_context_owner;
-		config.Actors.ClientLogger = default_logger_user;
-		config.Actors.Logger = default_logger_user;
-		config.Options.LocalEndpoint = LocalEndpoint;
+		{
+			auto&& config = cheatsheet.Provider->Configure();
+			const auto actors = config.Actors;
+			actors.ClientLogger = default_logger_user;
+			actors.Logger = default_logger_user;
+
+			const auto options = config.Options;
+			options.LocalEndpoint = LocalEndpoint;
+		}
+		{
+			auto&& config = cheatsheet.Task.Configure();
+			const auto options = config.Options;
+			options.ReaderMinInterval = 1ms;
+			options.WriterMinInterval = 5ms;
+		}
 	}
 
-	EasyCommunicationTaskPoolsAndMonitors<MessageType, MessageType> utils{};
-
-	EasyCommunicationTask<BoostTCPSocketRWerProvider, MessageType, MessageType> task{};
-	{
-		utils.Apply(task);
-		auto&& config = task.Configure();
-		config.Actors.Provider = provider;
-		const auto& options = config.Options;
-		options.ReaderMinInterval = std::chrono::milliseconds{1};
-		options.WriterMinInterval = std::chrono::milliseconds{5};
-	}
-
-	if (!task.IsFunctional()) return 1;
+	auto& task = cheatsheet.Task;
+	auto& utils = cheatsheet.Utils;
 
 	ThreadList threads{};
 	threads << task;
@@ -58,7 +58,7 @@ int main() {
 		IntervalSleeper sleeper{std::chrono::milliseconds{100}};
 
 		for (int i = 0; i < 10; i++) {
-			while (!reader_pool.GetItem(message)) 
+			while (!reader_pool.GetItem(message))
 				sleeper.Sleep();
 			spdlog::info("Reader> {}", Format(message));
 			writer_pool.SetItem(message);
