@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cstdint>
-#include <cstddef>
-#include <span>
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <span>
 
 namespace Cango :: inline ByteCommunication :: inline Core {
 	using SizeType = std::size_t;

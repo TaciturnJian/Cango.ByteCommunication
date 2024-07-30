@@ -10,8 +10,11 @@ namespace Cango :: inline ByteCommunication {
 	///		输入一个数据包的字节数，经过检验后输出数据包。
 	///		当一个数据包大小的数据到来时，将把所有字节加入缓冲区，然后在缓冲区中检查是否有完整的数据包，如果有则输出数据包。
 	///		如果没有则储存本次数据包等待下次数据包到来。
+	///	@tparam TVerifier 用于检验数据包是否符合要求，如果不符合要求，此类的 Examine 函数将返回 false
 	///	@note
-	///		初始化时需要提供 数据包的头字节 和 有效的、长度为两倍数据包大小的、连续内存 （将在构造时检查）
+	///		初始化时需要提供`数据包的头字节`和 有效的、长度为两倍数据包大小的`连续内存`
+	/// @todo
+	///		此类的成员管理有很大问题，等待调整
 	template <IsVerifier TVerifier>
 	class PingPongSpan final {
 		[[nodiscard]] bool Verify(CByteSpan span) noexcept { return span.front() == HeadByte && Verifier.Verify(span); }
@@ -19,12 +22,6 @@ namespace Cango :: inline ByteCommunication {
 
 		/// @brief 优化函数 @c FillPingWith0 ，避免重复清空 PingSpan
 		bool IsLastMessageFoundInPongSpan{false};
-
-		void FillPingWith0() noexcept {
-			if (IsLastMessageFoundInPongSpan) return; // 上一次已经清空了 Ping，这次就不用了
-			IsLastMessageFoundInPongSpan = true;
-			std::ranges::fill(PingSpan, 0);
-		}
 
 		[[nodiscard]] bool FindMessageSpan(CByteSpan& span) noexcept {
 			const auto head_index = std::ranges::find(PingSpan, HeadByte);
@@ -56,13 +53,15 @@ namespace Cango :: inline ByteCommunication {
 		/// @brief 假设已经写入所有数据到读取缓冲区(即 Pong 缓冲区)，现在执行交换流程，并检查是否可以输出
 		///	@param destination 用于输出数据的位置，大小必须大于或等于 GetReaderSpan().size()
 		[[nodiscard]] bool Examine(ByteSpan destination) noexcept {
-			// 检查 destination 的空间
 			if (destination.size() < PingSpan.size()) return false;
 
-			// 先验证读取缓冲区是否有完整的数据包，以提前返回，若提前返回
+			// 如果 PongSpan 中有完整的数据包，则直接输出
 			if (Verify(PongSpan)) {
 				std::ranges::copy(PongSpan, destination.begin());
-				FillPingWith0();
+				if (!IsLastMessageFoundInPongSpan) {
+					IsLastMessageFoundInPongSpan = true;
+					std::ranges::fill(PingSpan, 0);
+				}
 				return true;
 			}
 

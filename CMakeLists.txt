@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-include(Cango)
+include("Cango")
 
 project("Cango.ByteCommunication")
 
