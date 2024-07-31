@@ -1,6 +1,7 @@
 #include <Cango/ByteCommunication/BoostImplementations.hpp>
 #include <Cango/ByteCommunication/Core.hpp>
 #include <Cango/CommonUtils/AsyncItemPool.hpp>
+#include <Cango/TaskDesign/FormattableObject.hpp>
 #include <spdlog/spdlog.h>
 
 using namespace Cango;

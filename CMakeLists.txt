@@ -4,9 +4,10 @@ include("Cango")
 
 project("Cango.ByteCommunication")
 
-RequireLibraries(
-	"Cango_TaskDesign"
+set(RequiredLibraries
+	"Cango::TaskDesign"
 )
+RequireLibraries(RequiredLibraries)
 
 AddModulesInDirectory(
 	DIRECTORY "Modules"
@@ -19,6 +20,6 @@ AddCXXModule(
 	NAME "ByteCommunication"
 	NAMESPACE "Cango"
 	LINKS
-		"Cango_ByteCommunication_Core"
-		"Cango_ByteCommunication_BoostImplementations"
+		"Cango_ByteCommunication::Core"
+		"Cango_ByteCommunication::BoostImplementations"
 )

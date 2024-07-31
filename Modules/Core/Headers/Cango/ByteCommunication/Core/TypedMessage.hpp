@@ -1,10 +1,12 @@
 #pragma once
 
 #include <algorithm>
+#include <iomanip>
 
 #include "ByteTypes.hpp"
 
 namespace Cango :: inline ByteCommunication :: inline Core {
+
 #pragma pack(push, 1)
 	/// @brief 一种用来通信的结构，包含头(Head)、数据类型(Type)、数据区(Data)、尾(Tail)
 	///		提供了一些有关 Data 的转换函数，和转换对象为 std::span 的工具函数
@@ -31,9 +33,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		[[nodiscard]] ByteSpan ToSpan() noexcept { return {reinterpret_cast<std::uint8_t*>(this), FullSize}; }
 
 		/// @brief 构造 std::span，用于将数据从此空间写入其他位置
-		[[nodiscard]] CByteSpan ToSpan() const noexcept {
-			return {reinterpret_cast<const ByteType*>(this), FullSize};
-		}
+		[[nodiscard]] CByteSpan ToSpan() const noexcept { return {reinterpret_cast<const ByteType*>(this), FullSize}; }
 
 		/// @brief 将数据从 Data 复制到目标内存
 		///	@param object 指向目标的内存，必须是 TDataSize 大小
@@ -58,6 +58,14 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 			static_assert(sizeof(T) == DataSize, "inconsistent size of data and object");
 			return *reinterpret_cast<const T*>(Data.data());
 		}
+
+		std::ostream& Format(std::ostream& stream) const noexcept {
+			const auto span = ToSpan();
+			for (const auto byte : span.subspan(0, span.size() - 1))
+				stream << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << ' ';
+			return stream << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(span.back());
+		}
 	};
 #pragma pack(pop)
+
 }

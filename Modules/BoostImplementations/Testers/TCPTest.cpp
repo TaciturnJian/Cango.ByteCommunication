@@ -1,5 +1,6 @@
 #include <Cango/ByteCommunication/BoostImplementations.hpp>
 #include <spdlog/spdlog.h>
+#include <Cango/TaskDesign/FormattableObject.hpp>
 
 using namespace Cango;
 using namespace std::chrono_literals;

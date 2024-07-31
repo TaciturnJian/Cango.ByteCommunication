@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Cango/CommonUtils/AsyncItemPool.hpp>
-#include <Cango/TaskDesign.hpp>
+#include <Cango/TaskDesign/DeliveryTask.hpp>
 
 #include "PPBuffer.hpp"
 #include "RWer.hpp"
