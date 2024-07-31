@@ -5,5 +5,5 @@ AddCXXModule(
 	NAMESPACE "Cango_ByteCommunication"
 	LINKS
 		"Cango::TaskDesign"
-		"Cango_CommonUtils_AsyncItemPool"
+		"Cango_CommonUtils::AsyncItemPool"
 )
