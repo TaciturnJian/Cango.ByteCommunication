@@ -135,6 +135,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 
 		void SetItem(const ObjectUser<TReader>& reader) noexcept {
 			AdapterOwner->Configure().Actors.Reader = reader;
+			Task.Configure().Actors.Monitor.lock()->Reset();
 			Task.Execute();
 		}
 	};
@@ -208,6 +209,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 
 		void SetItem(const ObjectUser<TWriter>& writer) noexcept {
 			Transformer->Configure().Actors.Writer = writer;
+			Task.Configure().Actors.Monitor.lock()->Reset();
 			Task.Execute();
 		}
 	};
