@@ -272,8 +272,16 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		}
 
 		void SetItem(const ObjectUser<TRWer>& rw) noexcept {
-			std::thread reader_thread{[this, rw] { ReaderConsumer.SetItem(rw); }};
-			std::thread writer_thread{[this, rw] { WriterConsumer.SetItem(rw); }};
+			std::thread reader_thread{[this, rw] {
+				auto [writer_monitor_user, writer_monitor] = Acquire(WriterConsumer.Configure().Actors.Monitor);
+				ReaderConsumer.SetItem(rw);
+				writer_monitor.Interrupt();
+			}};
+			std::thread writer_thread{[this, rw] {
+				auto [reader_monitor_user, reader_monitor] = Acquire(ReaderConsumer.Configure().Actors.Monitor);
+				WriterConsumer.SetItem(rw);
+				reader_monitor.Interrupt();
+			}};
 			reader_thread.join();
 			writer_thread.join();
 		}
