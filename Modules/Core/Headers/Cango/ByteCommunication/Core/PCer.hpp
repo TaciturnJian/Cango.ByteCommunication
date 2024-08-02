@@ -395,7 +395,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		template <IsRWerProvider TProvider>
 		void Apply(EasyCommunicationTask<TProvider, TReaderMessage, TWriterMessage>& task) noexcept {
 			auto&& config = task.Configure();
-			auto& actors = config.Actors;
+			const auto actors = config.Actors;
 			actors.ReaderMessageDestination = ReaderMessagePool;
 			actors.WriterMessageSource = WriterMessagePool;
 			actors.ProviderMonitor = ProviderMonitor;
