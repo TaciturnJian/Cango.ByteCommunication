@@ -5,8 +5,10 @@
 #include "BoostRWer.hpp"
 
 namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
-	template <IsRWerProvider TProvider, std::default_initializable TReaderMessage, std::default_initializable
-		TWriterMessage>
+	template <
+		IsRWerProvider TProvider,
+		std::default_initializable TReaderMessage,
+		std::default_initializable TWriterMessage>
 	struct EasyRWerCommunicationTaskCheatsheet {
 		EasyCommunicationTask<TProvider, TReaderMessage, TWriterMessage> Task{};
 		EasyCommunicationTaskPoolsAndMonitors<TReaderMessage, TWriterMessage> Utils{};
