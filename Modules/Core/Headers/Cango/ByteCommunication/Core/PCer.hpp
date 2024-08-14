@@ -91,7 +91,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 	class DeliveryTaskAsReaderConsumer final {
 		using AdapterType = ReaderToMessageSourceAdapter<TReader, TMessage, TVerifier>;
 
-		ObjectOwner<AdapterType> AdapterOwner{std::make_shared<AdapterType>()};
+		ObjectOwner<AdapterType> AdapterOwner{};
 		DeliveryTask<AdapterType, TMessageDestination, TTaskMonitor> Task{};
 
 		struct Configurations {
@@ -110,7 +110,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 	public:
 		using ItemType = ObjectUser<TReader>;
 
-		DeliveryTaskAsReaderConsumer() noexcept { Task.Configure().Actors.ItemSource = AdapterOwner; }
+		DeliveryTaskAsReaderConsumer() noexcept { AdapterOwner.Authorize(Task.Configure().Actors.ItemSource); }
 
 		[[nodiscard]] Configurations Configure() noexcept {
 			auto&& adapter = AdapterOwner->Configure();
@@ -129,13 +129,13 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		}
 
 		[[nodiscard]] bool IsFunctional() noexcept {
-			auto&& config = Task.Configure();
-			return ValidateAll(config.Actors.ItemDestination, config.Actors.Monitor);
+			const auto actors = Task.Configure().Actors;
+			return Validate(actors.ItemDestination, actors.Monitor);
 		}
 
 		void SetItem(const ObjectUser<TReader>& reader) noexcept {
 			AdapterOwner->Configure().Actors.Reader = reader;
-			Task.Configure().Actors.Monitor.lock()->Reset();
+			Task.Configure().Actors.Monitor.AcquireUser()->Reset();
 			Task.Execute();
 		}
 	};
@@ -151,12 +151,11 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		};
 
 	public:
-		using ItemType = TMessage;
-
 		[[nodiscard]] Configurations Configure() noexcept { return {.Actors = {Writer}}; }
 
 		[[nodiscard]] bool IsFunctional() const noexcept { return ValidateAll(Writer); }
-
+		
+		using ItemType = TMessage;
 		void SetItem(const TMessage& message) noexcept {
 			(void)Writer->WriteBytes(CByteSpan{reinterpret_cast<const ByteType*>(&message), sizeof(TMessage)});
 		}
@@ -170,7 +169,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 	class DeliveryTaskAsWriterConsumer final {
 		using AdapterType = WriterToMessageDestinationAdapter<TWriter, TMessage>;
 
-		ObjectOwner<AdapterType> Transformer{std::make_shared<AdapterType>()};
+		ObjectOwner<AdapterType> Transformer{};
 		DeliveryTask<TMessageSource, AdapterType, TTaskMonitor> Task{};
 
 		struct Configurations {
@@ -185,9 +184,8 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		};
 
 	public:
-		using ItemType = ObjectUser<TWriter>;
-
-		DeliveryTaskAsWriterConsumer() noexcept { Task.Configure().Actors.ItemDestination = Transformer; }
+		
+		DeliveryTaskAsWriterConsumer() noexcept { Transformer.Authorize(Task.Configure().Actors.ItemDestination); }
 
 		[[nodiscard]] Configurations Configure() noexcept {
 			auto&& delivery = Task.Configure();
@@ -207,9 +205,10 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 			return ValidateAll(config.Actors.ItemSource, config.Actors.Monitor);
 		}
 
+		using ItemType = ObjectUser<TWriter>;
 		void SetItem(const ObjectUser<TWriter>& writer) noexcept {
 			Transformer->Configure().Actors.Writer = writer;
-			Task.Configure().Actors.Monitor.lock()->Reset();
+			Task.Configure().Actors.Monitor.AcquireUser()->Reset();
 			Task.Execute();
 		}
 	};
@@ -246,7 +245,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		};
 
 	public:
-		using ItemType = ObjectUser<TRWer>;
+		DeliveryTaskAsRWerConsumer() = default;
 
 		[[nodiscard]] Configurations Configure() noexcept {
 			auto&& reader = ReaderConsumer.Configure();
@@ -271,17 +270,28 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 			return ReaderConsumer.IsFunctional() && WriterConsumer.IsFunctional();
 		}
 
-		void SetItem(const ObjectUser<TRWer>& rw) noexcept {
-			std::thread reader_thread{[this, rw] {
-				auto [writer_monitor_user, writer_monitor] = Acquire(WriterConsumer.Configure().Actors.Monitor);
-				ReaderConsumer.SetItem(rw);
-				writer_monitor.Interrupt();
-			}};
-			std::thread writer_thread{[this, rw] {
-				auto [reader_monitor_user, reader_monitor] = Acquire(ReaderConsumer.Configure().Actors.Monitor);
-				WriterConsumer.SetItem(rw);
-				reader_monitor.Interrupt();
-			}};
+		using ItemType = ObjectOwner<TRWer>;
+		void SetItem(const ObjectOwner<TRWer>& rw) noexcept {
+			const auto rw_user = rw.Use();
+			std::thread reader_thread{
+				[this, rw_user] {
+					ObjectUser<TWriterMonitor> writer_monitor_user;
+					if (!WriterConsumer.Configure().Actors.Monitor.Acquire(writer_monitor_user))
+						return;
+					auto& writer_monitor = *writer_monitor_user;
+					ReaderConsumer.SetItem(rw_user);
+					writer_monitor.Interrupt();
+				}
+			};
+			std::thread writer_thread{
+				[this, rw_user] {
+					ObjectUser<TReaderMonitor> reader_monitor_user;
+					if (!ReaderConsumer.Configure().Actors.Monitor.Acquire(reader_monitor_user)) return;
+					auto& reader_monitor = *reader_monitor_user;
+					WriterConsumer.SetItem(rw_user);
+					reader_monitor.Interrupt();
+				}
+			};
 			reader_thread.join();
 			writer_thread.join();
 		}
@@ -307,7 +317,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		using ProviderTaskType = DeliveryTask<TProvider, RWerConsumerType, TProviderMonitor>;
 
 		ProviderTaskType ProviderTask{};
-		ObjectOwner<RWerConsumerType> RWerConsumer{std::make_shared<RWerConsumerType>()};
+		ObjectOwner<RWerConsumerType> RWerConsumer{};
 
 		struct Configurations {
 			struct ActorsType {
@@ -339,7 +349,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 
 		CommunicationTask() noexcept {
 			auto&& provider = ProviderTask.Configure();
-			provider.Actors.ItemDestination = RWerConsumer;
+			RWerConsumer.Authorize(provider.Actors.ItemDestination);
 		}
 
 		Configurations Configure() noexcept {
@@ -386,21 +396,21 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 
 	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>
 	struct EasyCommunicationTaskPoolsAndMonitors {
-		ObjectOwner<AsyncItemPool<TReaderMessage>> ReaderMessagePool{std::make_shared<AsyncItemPool<TReaderMessage>>()};
-		ObjectOwner<AsyncItemPool<TWriterMessage>> WriterMessagePool{std::make_shared<AsyncItemPool<TWriterMessage>>()};
-		ObjectOwner<EasyDeliveryTaskMonitor> ProviderMonitor{std::make_shared<EasyDeliveryTaskMonitor>()};
-		ObjectOwner<EasyDeliveryTaskMonitor> ReaderMonitor{std::make_shared<EasyDeliveryTaskMonitor>()};
-		ObjectOwner<EasyDeliveryTaskMonitor> WriterMonitor{std::make_shared<EasyDeliveryTaskMonitor>()};
+		ObjectOwner<AsyncItemPool<TReaderMessage>> ReaderMessagePool{};
+		ObjectOwner<AsyncItemPool<TWriterMessage>> WriterMessagePool{};
+		ObjectOwner<EasyDeliveryTaskMonitor> ProviderMonitor{};
+		ObjectOwner<EasyDeliveryTaskMonitor> ReaderMonitor{};
+		ObjectOwner<EasyDeliveryTaskMonitor> WriterMonitor{};
 
 		template <IsRWerProvider TProvider>
 		void Apply(EasyCommunicationTask<TProvider, TReaderMessage, TWriterMessage>& task) noexcept {
 			auto&& config = task.Configure();
 			const auto actors = config.Actors;
-			actors.ReaderMessageDestination = ReaderMessagePool;
-			actors.WriterMessageSource = WriterMessagePool;
-			actors.ProviderMonitor = ProviderMonitor;
-			actors.ReaderMonitor = ReaderMonitor;
-			actors.WriterMonitor = WriterMonitor;
+			ReaderMessagePool.Authorize(actors.ReaderMessageDestination);
+			WriterMessagePool.Authorize(actors.WriterMessageSource);
+			ProviderMonitor.Authorize(actors.ProviderMonitor);
+			ReaderMonitor.Authorize(actors.ReaderMonitor);
+			WriterMonitor.Authorize(actors.WriterMonitor);
 		}
 	};
 }

@@ -10,16 +10,16 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 	struct EasyRWerCommunicationTaskCheatsheet {
 		EasyCommunicationTask<TProvider, TReaderMessage, TWriterMessage> Task{};
 		EasyCommunicationTaskPoolsAndMonitors<TReaderMessage, TWriterMessage> Utils{};
-		ObjectOwner<boost::asio::io_context> IOContext{std::make_shared<boost::asio::io_context>()};
-		ObjectOwner<TProvider> Provider{std::make_shared<TProvider>()};
+		ObjectOwner<boost::asio::io_context> IOContext{};
+		ObjectOwner<TProvider> Provider{};
 
 		EasyRWerCommunicationTaskCheatsheet() {
 			auto&& provider_config = Provider->Configure();
-			provider_config.Actors.IOContext = IOContext;
+			IOContext.Authorize(provider_config.Actors.IOContext);
 
 			Utils.Apply(Task);
 			auto&& task_config = Task.Configure();
-			task_config.Actors.Provider = Provider;
+			Provider.Authorize(task_config.Actors.Provider);
 		}
 	};
 

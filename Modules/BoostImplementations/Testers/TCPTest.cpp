@@ -23,7 +23,7 @@ namespace {
 }
 
 int main() {
-	const auto default_logger_user = spdlog::default_logger();
+	const ObjectUser default_logger_user{spdlog::default_logger()};
 	EasyBoostTCPSocketRWerCommunicationTaskCheatsheet<MessageType, MessageType> cheatsheet{};
 	{
 		{
