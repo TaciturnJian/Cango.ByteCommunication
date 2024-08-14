@@ -1,12 +1,11 @@
 #pragma once
 
-#include <algorithm>
+#include <ranges>
 #include <iomanip>
 
 #include "ByteTypes.hpp"
 
 namespace Cango :: inline ByteCommunication :: inline Core {
-
 #pragma pack(push, 1)
 	/// @brief 一种用来通信的结构，包含头(Head)、数据类型(Type)、数据区(Data)、尾(Tail)
 	///		提供了一些有关 Data 的转换函数，和转换对象为 std::span 的工具函数
@@ -30,7 +29,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		ByteType Tail{0};
 
 		/// @brief 构造 std::span，用于将数据从其他位置读取到此空间
-		[[nodiscard]] ByteSpan ToSpan() noexcept { return {reinterpret_cast<std::uint8_t*>(this), FullSize}; }
+		[[nodiscard]] ByteSpan ToSpan() noexcept { return {reinterpret_cast<ByteType*>(this), FullSize}; }
 
 		/// @brief 构造 std::span，用于将数据从此空间写入其他位置
 		[[nodiscard]] CByteSpan ToSpan() const noexcept { return {reinterpret_cast<const ByteType*>(this), FullSize}; }
@@ -67,5 +66,4 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		}
 	};
 #pragma pack(pop)
-
 }

@@ -7,7 +7,10 @@
 
 namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 	template <typename TBoostDevice>
-	SizeType ReadBytes(TBoostDevice& device, const ByteSpan buffer, boost::system::error_code& result) noexcept {
+	SizeType ReadBytes(
+		TBoostDevice& device,
+		const ByteSpan buffer,
+		boost::system::error_code& result) noexcept {
 		return boost::asio::read(device, boost::asio::buffer(buffer.data(), buffer.size()), result);
 	}
 
@@ -19,7 +22,10 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		boost::system::error_code& result) noexcept;
 
 	template <typename TBoostDevice>
-	SizeType WriteBytes(TBoostDevice& device, const CByteSpan buffer, boost::system::error_code& result) noexcept {
+	SizeType WriteBytes(
+		TBoostDevice& device,
+		const CByteSpan buffer,
+		boost::system::error_code& result) noexcept {
 		return boost::asio::write(device, boost::asio::buffer(buffer.data(), buffer.size()), result);
 	}
 
