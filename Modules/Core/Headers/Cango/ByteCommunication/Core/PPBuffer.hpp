@@ -18,7 +18,6 @@ namespace Cango :: inline ByteCommunication {
 	template <IsVerifier TVerifier>
 	class PingPongSpan final {
 		[[nodiscard]] bool Verify(CByteSpan span) noexcept { return span.front() == HeadByte && Verifier.Verify(span); }
-		void CopyPongToPing() noexcept { std::ranges::copy(PongSpan, PingSpan.begin()); }
 
 		/// @brief 优化函数 @c FillPingWith0 ，避免重复清空 PingSpan
 		bool IsLastMessageFoundInPongSpan{false};
@@ -34,9 +33,9 @@ namespace Cango :: inline ByteCommunication {
 		using VerifierType = TVerifier;
 
 		ByteType HeadByte{'!'};
-		ByteSpan PingSpan{};
-		ByteSpan PongSpan{};
-		ByteSpan FullSpan{};
+		ByteSpan PingSpan;
+		ByteSpan PongSpan;
+		ByteSpan FullSpan;
 		TVerifier Verifier{};
 
 		/// @brief 给定头字节和完整的内存区间，构造 PingPongExchanger
@@ -66,10 +65,10 @@ namespace Cango :: inline ByteCommunication {
 			}
 
 			IsLastMessageFoundInPongSpan = false;
-			CByteSpan message_span{};
-			const bool successful = FindMessageSpan(message_span) && Verify(message_span);
+			CByteSpan message_span;
+			const auto successful = FindMessageSpan(message_span) && Verify(message_span);
 			if (successful) std::ranges::copy(message_span, destination.begin());
-			CopyPongToPing();
+			std::ranges::copy(PongSpan, PingSpan.begin());
 			return successful;
 		}
 	};

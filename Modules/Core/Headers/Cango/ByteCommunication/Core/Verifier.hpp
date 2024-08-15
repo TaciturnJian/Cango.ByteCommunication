@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+
 #include "ByteTypes.hpp"
 
 namespace Cango :: inline ByteCommunication :: inline Core {
