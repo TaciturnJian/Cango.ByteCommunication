@@ -14,7 +14,7 @@ namespace Cango :: inline ByteCommunication {
 	///	@note
 	///		初始化时需要提供`数据包的头字节`和 有效的、长度为两倍数据包大小的`连续内存`
 	/// @todo
-	///		此类的成员管理有很大问题，等待调整
+	///		成员管理有很大问题，等待调整
 	template <IsVerifier TVerifier>
 	class PingPongSpan final {
 		[[nodiscard]] bool Verify(CByteSpan span) noexcept { return span.front() == HeadByte && Verifier.Verify(span); }

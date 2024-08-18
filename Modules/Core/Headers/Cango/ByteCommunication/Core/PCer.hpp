@@ -272,7 +272,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 
 		using ItemType = ObjectOwner<TRWer>;
 		void SetItem(const ObjectOwner<TRWer>& rw) noexcept {
-			const auto rw_user = rw.Use();
+			const auto rw_user = rw.AcquireUser();
 			std::thread reader_thread{
 				[this, rw_user] {
 					ObjectUser<TWriterMonitor> writer_monitor_user;
