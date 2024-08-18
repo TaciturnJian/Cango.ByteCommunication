@@ -4,7 +4,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 	bool CangoSerialPortRWerProvider::
 	TryOpen(boost::asio::serial_port& device, const std::string& port) const noexcept {
 		if (boost::system::error_code result{}; device.open(port, result).failed()) {
-			if (Logger.IsValid()) Logger->error("无法打开设备({}): {}", port, result.what());
+			if (Logger) Logger->error("无法打开设备({}): {}", port, result.what());
 			return false;
 		}
 		return true;
@@ -14,7 +14,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 	bool CangoSerialPortRWerProvider::
 	TryApply(boost::asio::serial_port& device, const TOption& option) const noexcept {
 		if (boost::system::error_code result{}; device.set_option(option, result).failed()) {
-			if (Logger.IsValid()) Logger->error("无法应用配置: {}", result.what());
+			if (Logger) Logger->error("无法应用配置: {}", result.what());
 			return false;
 		}
 		return true;
@@ -35,15 +35,15 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		};
 	}
 
-	bool CangoSerialPortRWerProvider::IsFunctional() const noexcept { return Validate(IOContext); }
+	bool CangoSerialPortRWerProvider::IsFunctional() const noexcept { return !IOContext.expired(); }
 
-	bool CangoSerialPortRWerProvider::GetItem(ObjectOwner<SerialPortRWer>& sp) noexcept {
-		const auto context_user = IOContext.AcquireUser();
-		if (!context_user.IsValid()) return false;
+	bool CangoSerialPortRWerProvider::GetItem(Owner<SerialPortRWer>& sp) const noexcept {
+		const auto context_user = IOContext.lock();
+		if (!context_user) return false;
 		for (const auto& port : Ports) {
-			ObjectOwner<boost::asio::serial_port> new_boost_sp{*context_user};
-			if (!TryOpen(*new_boost_sp, port) || !TryApplyOptions(*new_boost_sp)) continue;;
-			sp = std::move(ObjectOwner<SerialPortRWer>{std::move(new_boost_sp), RWerLogger});
+			Owner<boost::asio::serial_port> new_boost_sp{*context_user};
+			if (!TryOpen(*new_boost_sp, port) || !TryApplyOptions(*new_boost_sp)) continue;
+			sp = Owner<SerialPortRWer>{new_boost_sp, RWerLogger};
 			return true;
 		}
 
@@ -52,7 +52,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 
 	bool CangoTCPSocketRWerProvider::TryOpen(boost::asio::ip::tcp::socket& device) const {
 		if (boost::system::error_code result{}; device.open(LocalEndpoint.protocol(), result).failed()) {
-			if (Logger.IsValid()) Logger->error("无法打开设备: {}", result.what());
+			if (Logger) Logger->error("无法打开设备: {}", result.what());
 			return false;
 		}
 		return true;
@@ -60,7 +60,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 
 	bool CangoTCPSocketRWerProvider::TryBind(boost::asio::ip::tcp::socket& device) const noexcept {
 		if (boost::system::error_code result{}; device.bind(LocalEndpoint, result).failed()) {
-			if (Logger.IsValid())
+			if (Logger)
 				Logger->error(
 					"无法绑定到地址({}:{}): {}",
 					LocalEndpoint.address().to_string(),
@@ -74,7 +74,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 
 	bool CangoTCPSocketRWerProvider::TryConnect(boost::asio::ip::tcp::socket& device) const noexcept {
 		if (boost::system::error_code result{}; device.connect(RemoteEndpoint, result).failed()) {
-			if (Logger.IsValid())
+			if (Logger)
 				Logger->error(
 					"无法连接到地址({}:{}): {}",
 					RemoteEndpoint.address().to_string(),
@@ -93,25 +93,25 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		};
 	}
 
-	bool CangoTCPSocketRWerProvider::IsFunctional() const noexcept { return Validate(IOContext); }
+	bool CangoTCPSocketRWerProvider::IsFunctional() const noexcept { return !IOContext.expired(); }
 
-	bool CangoTCPSocketRWerProvider::GetItem(ObjectOwner<TCPSocketRWer>& socket) noexcept {
-		const auto context_user = IOContext.AcquireUser();
-		ObjectOwner<boost::asio::ip::tcp::socket> new_socket{*context_user};
+	bool CangoTCPSocketRWerProvider::GetItem(Owner<TCPSocketRWer>& socket) noexcept {
+		const auto context_user = IOContext.lock();
+		Owner<boost::asio::ip::tcp::socket> new_socket{*context_user};
 		if (!TryOpen(*new_socket) || !TryBind(*new_socket) || !TryConnect(*new_socket)) return false;
-		socket = std::move(ObjectOwner<TCPSocketRWer>{std::move(new_socket), RWerLogger});
+		socket = Owner<TCPSocketRWer>{new_socket, RWerLogger};
 		return true;
 	}
 
 	bool BoostTCPSocketRWerProvider::RefreshAcceptor() noexcept {
 		if (IsListening) return true;
 		if (boost::system::error_code result{}; Acceptor.open(LocalEndpoint.protocol(), result).failed()) {
-			if (Logger.IsValid()) Logger->error("无法打开侦听器: {}", result.what());
+			if (Logger) Logger->error("无法打开侦听器: {}", result.what());
 			return false;
 		}
 		if (boost::system::error_code result{};
 			Acceptor.bind(LocalEndpoint, result).failed()) {
-			if (Logger.IsValid())
+			if (Logger)
 				Logger->error(
 					"无法绑定到地址({}:{}): {}",
 					LocalEndpoint.address().to_string(),
@@ -121,7 +121,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		}
 		if (boost::system::error_code result{};
 			Acceptor.listen(boost::asio::socket_base::max_listen_connections, result).failed()) {
-			if (Logger.IsValid()) Logger->error("无法开始侦听: {}", result.what());
+			if (Logger) Logger->error("无法开始侦听: {}", result.what());
 			return false;
 		}
 		IsListening = true;
@@ -135,25 +135,26 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		};
 	}
 
-	bool BoostTCPSocketRWerProvider::IsFunctional() const noexcept { return Validate(IOContext); }
+	bool BoostTCPSocketRWerProvider::IsFunctional() const noexcept { return !IOContext.expired(); }
 
-	bool BoostTCPSocketRWerProvider::GetItem(ObjectOwner<TCPSocketRWer>& socket) {
+	bool BoostTCPSocketRWerProvider::GetItem(Owner<TCPSocketRWer>& socket) {
 		if (!RefreshAcceptor()) return false;
 
-		ObjectUser<boost::asio::io_context> context_user;
-		if (!IOContext.Acquire(context_user)) return false;
-		ObjectOwner<boost::asio::ip::tcp::socket> new_socket{*context_user};
+		const ObjectUser<boost::asio::io_context> context_user = IOContext.lock();
+		if (!context_user) return false;
+
+		Owner<boost::asio::ip::tcp::socket> new_socket{*context_user};
 		if (boost::system::error_code result; Acceptor.accept(*new_socket, result).failed()) {
-			if (Logger.IsValid()) Logger->error("无法接受连接: {}", result.what());
+			if (Logger) Logger->error("无法接受连接: {}", result.what());
 			return false;
 		}
-		socket = std::move(ObjectOwner<TCPSocketRWer>{std::move(new_socket), ClientLogger});
+		socket = Owner<TCPSocketRWer>{new_socket, ClientLogger};
 		return true;
 	}
 
 	bool CangoUDPSocketRWerProvider::TryOpen(boost::asio::ip::udp::socket& device) const noexcept {
 		if (boost::system::error_code result{}; device.open(LocalEndpoint.protocol(), result).failed()) {
-			if (Logger.IsValid()) Logger->error("无法打开设备: {}", result.what());
+			if (Logger) Logger->error("无法打开设备: {}", result.what());
 			return false;
 		}
 		return true;
@@ -161,7 +162,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 
 	bool CangoUDPSocketRWerProvider::TryBind(boost::asio::ip::udp::socket& device) const noexcept {
 		if (boost::system::error_code result{}; device.bind(LocalEndpoint, result).failed()) {
-			if (Logger.IsValid())
+			if (Logger)
 				Logger->error(
 					"无法绑定到地址({}:{}): {}",
 					LocalEndpoint.address().to_string(),
@@ -174,7 +175,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 
 	bool CangoUDPSocketRWerProvider::TryConnect(boost::asio::ip::udp::socket& device) const noexcept {
 		if (boost::system::error_code result{}; device.connect(RemoteEndpoint, result).failed()) {
-			if (Logger.IsValid())
+			if (Logger)
 				Logger->error(
 					"无法连接到地址({}:{}): {}",
 					RemoteEndpoint.address().to_string(),
@@ -192,14 +193,14 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		};
 	}
 
-	bool CangoUDPSocketRWerProvider::IsFunctional() const noexcept { return Validate(IOContext); }
+	bool CangoUDPSocketRWerProvider::IsFunctional() const noexcept { return !IOContext.expired(); }
 
-	bool CangoUDPSocketRWerProvider::GetItem(ObjectOwner<UDPSocketRWer>& socket) noexcept {
-		const auto context_user = IOContext.AcquireUser();
-		if (!context_user.IsValid()) return false;
-		ObjectOwner<boost::asio::ip::udp::socket> new_socket{*context_user};
+	bool CangoUDPSocketRWerProvider::GetItem(Owner<UDPSocketRWer>& socket) noexcept {
+		const auto context_user = IOContext.lock();
+		if (!context_user) return false;
+		Owner<boost::asio::ip::udp::socket> new_socket{*context_user};
 		if (!TryOpen(*new_socket) || !TryBind(*new_socket) || !TryConnect(*new_socket)) return false;
-		socket = std::move(ObjectOwner<UDPSocketRWer>{std::move(new_socket), RWerLogger});
+		socket = Owner<UDPSocketRWer>{new_socket, RWerLogger};
 		return true;
 	}
 }

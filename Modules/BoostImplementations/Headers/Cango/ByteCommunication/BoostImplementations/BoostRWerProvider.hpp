@@ -12,16 +12,19 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 	struct EasyRWerCommunicationTaskCheatsheet {
 		EasyCommunicationTask<TProvider, TReaderMessage, TWriterMessage> Task{};
 		EasyCommunicationTaskPoolsAndMonitors<TReaderMessage, TWriterMessage> Utils{};
-		ObjectOwner<boost::asio::io_context> IOContext{};
-		ObjectOwner<TProvider> Provider{};
+		Owner<boost::asio::io_context> IOContext{};
+		Owner<TProvider> Provider{};
 
 		EasyRWerCommunicationTaskCheatsheet() {
 			auto&& provider_config = Provider->Configure();
-			IOContext.Authorize(provider_config.Actors.IOContext);
+			provider_config.Actors.IOContext = IOContext;
 
 			Utils.Apply(Task);
 			auto&& task_config = Task.Configure();
-			Provider.Authorize(task_config.Actors.Provider);
+			{
+				const auto actors = task_config.Actors;
+				actors.Provider = Provider;
+			}
 		}
 	};
 
@@ -71,13 +74,13 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		[[nodiscard]] bool TryApplyOptions(boost::asio::serial_port& device) const noexcept;
 
 	public:
-		using ItemType = ObjectOwner<SerialPortRWer>;
+		using ItemType = Owner<SerialPortRWer>;
 
 		[[nodiscard]] Configurations Configure() noexcept;
 
 		[[nodiscard]] bool IsFunctional() const noexcept;
 
-		[[nodiscard]] bool GetItem(ObjectOwner<SerialPortRWer>& sp) noexcept;
+		[[nodiscard]] bool GetItem(Owner<SerialPortRWer>& sp) const noexcept;
 	};
 
 	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>
@@ -115,13 +118,13 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		[[nodiscard]] bool TryConnect(boost::asio::ip::tcp::socket& device) const noexcept;
 
 	public:
-		using ItemType = ObjectOwner<TCPSocketRWer>;
+		using ItemType = Owner<TCPSocketRWer>;
 
 		[[nodiscard]] Configurations Configure() noexcept;
 
 		[[nodiscard]] bool IsFunctional() const noexcept;
 
-		[[nodiscard]] bool GetItem(ObjectOwner<TCPSocketRWer>& socket) noexcept;
+		[[nodiscard]] bool GetItem(Owner<TCPSocketRWer>& socket) noexcept;
 	};
 
 	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>
@@ -153,13 +156,13 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		[[nodiscard]] bool RefreshAcceptor() noexcept;
 
 	public:
-		using ItemType = ObjectOwner<TCPSocketRWer>;
+		using ItemType = Owner<TCPSocketRWer>;
 
 		[[nodiscard]] Configurations Configure() noexcept;
 
 		[[nodiscard]] bool IsFunctional() const noexcept;
 
-		[[nodiscard]] bool GetItem(ObjectOwner<TCPSocketRWer>& socket);
+		[[nodiscard]] bool GetItem(Owner<TCPSocketRWer>& socket);
 	};
 
 	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>
@@ -197,13 +200,13 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		[[nodiscard]] bool TryConnect(boost::asio::ip::udp::socket& device) const noexcept;
 
 	public:
-		using ItemType = ObjectOwner<UDPSocketRWer>;
+		using ItemType = Owner<UDPSocketRWer>;
 
 		[[nodiscard]] Configurations Configure() noexcept;
 
 		[[nodiscard]] bool IsFunctional() const noexcept;
 
-		[[nodiscard]] bool GetItem(ObjectOwner<UDPSocketRWer>& socket) noexcept;
+		[[nodiscard]] bool GetItem(Owner<UDPSocketRWer>& socket) noexcept;
 	};
 
 	template <std::default_initializable TReaderMessage, std::default_initializable TWriterMessage>

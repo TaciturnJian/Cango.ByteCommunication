@@ -2,7 +2,7 @@
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/serial_port.hpp>
-#include <Cango/TaskDesign/ObjectOwnership.hpp>
+#include <Cango/CommonUtils/ObjectOwnership.hpp>
 #include <spdlog/logger.h>
 
 #include "BoostReadWrite.hpp"
@@ -10,10 +10,10 @@
 namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 	template <typename TBoostDevice>
 	struct BoostRWer final {
-		ObjectOwner<TBoostDevice> DeviceOwner;
+		Owner<TBoostDevice> DeviceOwner;
 		ObjectUser<spdlog::logger> Logger;
 
-		BoostRWer(ObjectOwner<TBoostDevice>& deviceOwner, const ObjectUser<spdlog::logger>& logger) :
+		BoostRWer(Owner<TBoostDevice>& deviceOwner, const ObjectUser<spdlog::logger>& logger) :
 			DeviceOwner(std::move(deviceOwner)),
 			Logger(logger) {
 		}
@@ -25,7 +25,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		[[nodiscard]] std::size_t ReadBytes(const ByteSpan buffer) noexcept {
 			boost::system::error_code result{};
 			const auto bytes = Cango::ReadBytes(*DeviceOwner, buffer, result);
-			if (result.failed() && Logger.IsValid())
+			if (result.failed() && Logger) // 因为 result.failed() 是 constexpr ，所以放在前面
 				Logger->error("读取字节失败({}/{}): {}", bytes, buffer.size(), result.what());
 			return bytes;
 		}
@@ -37,7 +37,7 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		[[nodiscard]] std::size_t WriteBytes(const CByteSpan buffer) noexcept {
 			boost::system::error_code result{};
 			const auto bytes = Cango::WriteBytes(*DeviceOwner, buffer, result);
-			if (result.failed() && Logger.IsValid())
+			if (result.failed() && Logger) // 因为 result.failed() 是 constexpr ，所以放在前面
 				Logger->error("写入字节失败({}/{}): {}", bytes, buffer.size(), result.what());
 			return bytes;
 		}
