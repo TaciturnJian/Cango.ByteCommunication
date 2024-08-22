@@ -385,6 +385,11 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 		}
 
 		void Execute() noexcept { ProviderTask.Execute(); }
+
+		// ReSharper disable once CppNonExplicitConversionOperator
+		operator std::function<void()>() noexcept {
+			return [this] { Execute(); };
+		}
 	};
 
 	template <
