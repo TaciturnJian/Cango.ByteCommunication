@@ -1,6 +1,7 @@
 #include <Cango/ByteCommunication/BoostImplementations.hpp>
 #include <spdlog/spdlog.h>
-#include <Cango/TaskDesign/FormattableObject.hpp>
+#include <fmt/ostream.h>
+
 
 using namespace Cango;
 using namespace std::chrono_literals;
@@ -15,12 +16,15 @@ namespace {
 		std::array<std::uint8_t, 8> Data{};
 		std::uint8_t Tail{0};
 
-		std::ostream& Format(std::ostream& stream) const noexcept {
-			for (const auto byte : Data) stream << static_cast<int>(byte) << ' ';
+		friend std::ostream& operator<<(std::ostream& stream, const MessageType& object) noexcept {
+			for (const auto byte : object.Data) stream << static_cast<int>(byte) << ' ';
 			return stream;
 		}
 	};
 }
+
+template<>
+struct fmt::formatter<MessageType> : ostream_formatter {};
 
 int main() {
 	const ObjectUser default_logger_user{spdlog::default_logger()};
@@ -61,7 +65,7 @@ int main() {
 		for (int i = 0; i < 10; i++) {
 			while (!reader_pool.GetItem(message))
 				sleeper.Sleep();
-			spdlog::info("Reader> {}", Format(message));
+			spdlog::info("Reader> {}", message);
 			writer_pool.SetItem(message);
 		}
 
