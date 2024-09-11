@@ -20,6 +20,6 @@ AddCXXModule(
 	NAME "ByteCommunication"
 	NAMESPACE "Cango"
 	LINKS
-		"Cango_ByteCommunication::Core"
-		"Cango_ByteCommunication::BoostImplementations"
+		"Cango::ByteCommunication::Core"
+		"Cango::ByteCommunication::BoostImplementations"
 )

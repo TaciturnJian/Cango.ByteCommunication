@@ -2,8 +2,8 @@ project(Cango.ByteCommunication.Core)
 
 AddCXXModule(
 	NAME "Core"
-	NAMESPACE "Cango_ByteCommunication"
+	NAMESPACE "Cango::ByteCommunication"
 	LINKS
 		"Cango::TaskDesign"
-		"Cango_CommonUtils::AsyncItemPool"
+		"Cango::CommonUtils::AsyncItemPool"
 )
