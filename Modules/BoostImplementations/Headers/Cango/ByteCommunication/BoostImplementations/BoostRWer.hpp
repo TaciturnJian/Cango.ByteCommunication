@@ -25,8 +25,10 @@ namespace Cango :: inline ByteCommunication :: inline BoostImplementations {
 		[[nodiscard]] std::size_t ReadBytes(const ByteSpan buffer) noexcept {
 			boost::system::error_code result{};
 			const auto bytes = Cango::ReadBytes(*DeviceOwner, buffer, result);
-			if (result.failed() && Logger) // 因为 result.failed() 是 constexpr ，所以放在前面
+			if (result.failed() && Logger) {
 				Logger->error("读取字节失败({}/{}): {}", bytes, buffer.size(), result.what());
+			}
+
 			return bytes;
 		}
 

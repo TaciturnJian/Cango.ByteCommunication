@@ -2,7 +2,6 @@
 #include <spdlog/spdlog.h>
 #include <fmt/ostream.h>
 
-
 using namespace Cango;
 using namespace std::chrono_literals;
 
@@ -26,22 +25,31 @@ namespace {
 template<>
 struct fmt::formatter<MessageType> : ostream_formatter {};
 
+/* 测试脚本
+(echo -n -e '!01234567\0'; sleep 2)|telnet 127.0.0.1 8989
+
+*/
+
 int main() {
+	spdlog::set_level(spdlog::level::debug);
+
 	const ObjectUser default_logger_user{spdlog::default_logger()};
 	EasyBoostTCPSocketRWerCommunicationTaskCheatsheet<MessageType, MessageType> cheatsheet{};
 	{
 		{
-			auto&& config = cheatsheet.Provider->Configure();
-			const auto actors = config.Actors;
+			auto&& [actors, options] = cheatsheet.Provider->Configure();
 			actors.ClientLogger = default_logger_user;
 			actors.Logger = default_logger_user;
-
-			const auto options = config.Options;
 			options.LocalEndpoint = LocalEndpoint;
 		}
 		{
-			auto&& config = cheatsheet.Task.Configure();
-			const auto options = config.Options;
+			auto&& [actors, options] = cheatsheet.Task.Configure();
+
+			// 屏蔽异常处理
+			const auto monitor = actors.WriterMonitor.lock();
+			monitor->ExceptionHandler = []{};
+			monitor->NormalHandler = []{};
+
 			options.ReaderMinInterval = 1ms;
 			options.WriterMinInterval = 5ms;
 		}

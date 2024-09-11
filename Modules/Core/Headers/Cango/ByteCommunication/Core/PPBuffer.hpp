@@ -1,7 +1,7 @@
 #pragma once
 
-#include <algorithm>
 #include <stdexcept>
+#include <ranges>
 
 #include "Verifier.hpp"
 
@@ -38,8 +38,8 @@ namespace Cango :: inline ByteCommunication {
 		ByteSpan FullSpan;
 		TVerifier Verifier{};
 
-		/// @brief 给定头字节和完整的内存区间，构造 PingPongExchanger
-		///	@param fullSpan size 至少大于 2，否则会抛出 std::runtime_error
+		/// @brief 给定头字节和完整的内存区间，构造 @c PingPongExchanger
+		///	@param fullSpan size 至少大于 2，否则会抛出 @c std::runtime_error
 		/// @exception std::runtime_error 当给定的参数不符合要求时抛出异常
 		explicit PingPongSpan(const ByteSpan fullSpan) :
 			PingSpan(fullSpan.data(), fullSpan.size() / 2),
@@ -50,7 +50,7 @@ namespace Cango :: inline ByteCommunication {
 		}
 
 		/// @brief 假设已经写入所有数据到读取缓冲区(即 Pong 缓冲区)，现在执行交换流程，并检查是否可以输出
-		///	@param destination 用于输出数据的位置，大小必须大于或等于 GetReaderSpan().size()
+		///	@param destination 用于输出数据的位置，大小必须大于或等于 @c PongSpan.size()
 		[[nodiscard]] bool Examine(ByteSpan destination) noexcept {
 			if (destination.size() < PingSpan.size()) return false;
 
@@ -68,7 +68,7 @@ namespace Cango :: inline ByteCommunication {
 			CByteSpan message_span;
 			const auto successful = FindMessageSpan(message_span) && Verify(message_span);
 			if (successful) std::ranges::copy(message_span, destination.begin());
-			std::ranges::copy(PongSpan, PingSpan.begin());
+			std::ranges::copy(PongSpan, PingSpan.begin()); // 无论成功与否，都利用新数据覆盖 PingSpan
 			return successful;
 		}
 	};

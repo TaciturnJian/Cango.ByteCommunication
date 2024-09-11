@@ -31,6 +31,8 @@ template<>
 struct fmt::formatter<MessageType> : ostream_formatter {};
 
 int main() {
+	spdlog::set_level(spdlog::level::debug);
+
 	const ObjectUser default_logger_user{spdlog::default_logger()};
 	EasyCangoUDPSocketRWerCommunicationTaskCheatsheet<MessageType, MessageType> cheatsheet{};
 	{
