@@ -45,7 +45,7 @@ namespace Cango :: inline ByteCommunication {
 			PingSpan(fullSpan.data(), fullSpan.size() / 2),
 			PongSpan(fullSpan.data() + PingSpan.size(), PingSpan.size()),
 			FullSpan(fullSpan) {
-			if (PingSpan.empty()) throw std::runtime_error("sizeof fullSpan must be at least 2");
+			if (PingSpan.empty()) throw std::invalid_argument("sizeof fullSpan must be at least 2");
 			std::ranges::fill(PingSpan, 0);
 		}
 

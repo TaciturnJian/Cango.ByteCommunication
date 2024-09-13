@@ -7,35 +7,35 @@
 #include "RWer.hpp"
 
 namespace Cango :: inline ByteCommunication :: inline Core {
-	using ReaderProvider = ItemSource<Owner<Reader>>;
+	using ReaderProvider = ItemSource<Owner<RuntimeReader>>;
 	template <
 		typename TItemSource,
 		typename TOwner = typename TItemSource::ItemType,
 		typename TObject = typename TOwner::element_type>
 	concept IsReaderProvider = IsItemSource<TItemSource> && IsReader<TObject>;
 
-	using ReaderConsumer = ItemDestination<Owner<Reader>>;
+	using ReaderConsumer = ItemDestination<Owner<RuntimeReader>>;
 	template <
 		typename TItemDestination,
 		typename TOwner = typename TItemDestination::ItemType,
 		typename TObject = typename TOwner::element_type>
 	concept IsReaderConsumer = IsItemDestination<TItemDestination> && IsReader<TObject>;
 
-	using WriterProvider = ItemSource<Owner<Writer>>;
+	using WriterProvider = ItemSource<Owner<RuntimeWriter>>;
 	template <
 		typename TItemSource,
 		typename TOwner = typename TItemSource::ItemType,
 		typename TObject = typename TOwner::element_type>
 	concept IsWriterProvider = IsItemSource<TItemSource> && IsWriter<TObject>;
 
-	using WriterConsumer = ItemDestination<Owner<Writer>>;
+	using WriterConsumer = ItemDestination<Owner<RuntimeWriter>>;
 	template <
 		typename TItemDestination,
 		typename TOwner = typename TItemDestination::ItemType,
 		typename TObject = typename TOwner::element_type>
 	concept IsWriterConsumer = IsItemDestination<TItemDestination> && IsWriter<TObject>;
 
-	using RWerProvider = ItemSource<Owner<RWer>>;
+	using RWerProvider = ItemSource<Owner<RuntimeRWer>>;
 	template <
 		typename TItemSource,
 		typename TOwner = typename TItemSource::ItemType,

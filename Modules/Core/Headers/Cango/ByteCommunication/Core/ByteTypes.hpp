@@ -3,8 +3,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <span>
 #include <format>
+#include <span>
 
 namespace Cango :: inline ByteCommunication :: inline Core {
 	using SizeType = std::size_t;
@@ -19,6 +19,7 @@ namespace Cango :: inline ByteCommunication :: inline Core {
 	using ByteArray = std::array<ByteType, TSize>;
 }
 
+/// @brief 实现利用字节类型的格式标准实现只读字符区间的格式化
 template<>
 struct std::formatter<Cango::CByteSpan> : std::formatter<Cango::ByteType> {
 	auto format(const Cango::CByteSpan& span, std::format_context& ctx) const {
